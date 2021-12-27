@@ -8,8 +8,6 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class FluidUser : Pipe
     {
-        public Fluid Fluid;
         public float AmountPerTick;
-        public Circuit Circuit;
     }
 }
