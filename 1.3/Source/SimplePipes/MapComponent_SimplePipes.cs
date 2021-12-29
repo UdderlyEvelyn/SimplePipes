@@ -21,47 +21,35 @@ namespace UdderlyEvelyn.SimplePipes
 
         public void RegisterPipe(Pipe pipe)
         {
-            ActOnAdjacentPipes(pipe, otherPipe =>
+            List<Thing> things = new List<Thing>();
+            GenAdjFast.AdjacentThings8Way(pipe, things);
+            for (int i = 0; i < things.Count; i++)
             {
-                if (pipe.Circuit == null) //If we don't have a circuit yet..
-                    pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
-                else //We have a circuit already, we're mixing 'em together into one big circuit now!
+                Thing thing = things[i];
+                if (thing is Pipe)
                 {
-                    pipe.Circuit.Merge(otherPipe.Circuit);
-                    if (Circuits.Contains(otherPipe.Circuit))
-                        Circuits.Remove(otherPipe.Circuit);
-                    else
-                        Log.Error("[Simple Pipes] Attempted to remove unregistered circuit after merge.");
-                }
-            });
-            //The above would have to break out of the loop.
-            int pipeX = pipe.Position.x;
-            int pipeY = pipe.Position.y;
-            for (int x = pipeX - 1; x <= pipeX + 1; x++)
-                for (int y = pipeY - 1; y <= pipeY + 1; y++)
-                {
-                    if (x == pipeX && y == pipeY) //If it's the pipe's position itself.
-                        continue; //Skip.
-                    var things = map.thingGrid.ThingsAt(new IntVec3(x, y, 0));
-                    foreach (var thing in things)
-                        if (thing is Pipe)
+                    var otherPipe = (Pipe)thing;
+                    List<Thing> thingsInner = new List<Thing>();
+                    GenAdjFast.AdjacentThings8Way(otherPipe, thingsInner);
+                    for (int j = 0; j < thingsInner.Count; j++)
+                    {
+                        Thing thingInner = thingsInner[j];
+                        if (thingInner is Pipe)
                         {
-                            var otherPipe = (Pipe)thing;
-                            if (otherPipe.Fluid == pipe.Fluid) //If it's the same fluid type..
+                            if (pipe.Circuit == null) //If we don't have a circuit yet..
+                                pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
+                            else //We have a circuit already, we're mixing 'em together into one big circuit now!
                             {
-                                if (pipe.Circuit == null) //If we don't have a circuit yet..
-                                    pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
-                                else //We have a circuit already, we're mixing 'em together into one big circuit now!
-                                {
-                                    pipe.Circuit.Merge(otherPipe.Circuit);
-                                    if (Circuits.Contains(otherPipe.Circuit))
-                                        Circuits.Remove(otherPipe.Circuit);
-                                    else
-                                        Log.Error("[Simple Pipes] Attempted to remove unregistered circuit after merge.");
-                                }
+                                pipe.Circuit.Merge(otherPipe.Circuit);
+                                if (Circuits.Contains(otherPipe.Circuit))
+                                    Circuits.Remove(otherPipe.Circuit);
+                                else
+                                    Log.Error("[Simple Pipes] Attempted to remove unregistered circuit after merge.");
                             }
                         }
+                    }
                 }
+            }
             if (pipe.Circuit == null) //If we didn't find a circuit after all that..
             {
                 pipe.Circuit = new Circuit(new[] { pipe }) { Capacity = pipe.Capacity, Fluid = pipe.Fluid }; //New circuit.
@@ -71,85 +59,50 @@ namespace UdderlyEvelyn.SimplePipes
 
         public void DeregisterPipe(Pipe pipe)
         {
-            ActOnAdjacentPipes(pipe, otherPipe =>
+            var foundCircuitPipe = false;
+            Circuit circuit = null;
+            List<Thing> things = new List<Thing>();
+            GenAdjFast.AdjacentThings8Way(pipe, things);
+            for (int i = 0; i < things.Count; i++)
             {
-                var adjacentPipes = GetAdjacentPipes(otherPipe);
-                var foundCircuitPipe = false;
-                Circuit circuit = null;
-                for (int i = 0; i < adjacentPipes.Length; i++)
+                Thing thing = things[i];
+                if (thing is Pipe)
                 {
-                    var pipeInQuestion = adjacentPipes[i];
-                    if (pipeInQuestion != pipe) //Skip the pipe we're yeeting..
+                    var otherPipe = (Pipe)thing;
+                    List<Thing> thingsInner = new List<Thing>();
+                    GenAdjFast.AdjacentThings8Way(otherPipe, thingsInner);
+                    for (int j = 0; j < thingsInner.Count; j++)
                     {
-                        if (pipeInQuestion.Circuit == otherPipe.Circuit) //If the pipe has the same circuit as otherPipe..
+                        Thing thingInner = thingsInner[j];
+                        if (thingInner is Pipe)
                         {
-                            foundCircuitPipe = true; //We found one!
-                            break; //We're good, stop here.
+                            var pipeInQuestion = (Pipe)thingInner;
+                            if (pipeInQuestion != pipe) //Skip the pipe we're yeeting..
+                            {
+                                if (pipeInQuestion.Circuit != null && circuit == null)
+                                {
+                                    foundCircuitPipe = true;
+                                    break;
+                                }
+                                else if (pipeInQuestion.Circuit != null && circuit == null) //Else if the pipe has a different circuit and we don't already have an alternative circuit..
+                                    circuit = pipeInQuestion.Circuit; //Store it so we can swap to that circuit if there's no more keeping us in this one.
+                            }
+                            if (!foundCircuitPipe) //If we didn't find any other connection to the circuit, it's cut off!
+                            {
+                                if (otherPipe.Circuit.Pipes.Count == 1) //If this is the last pipe in the circuit..
+                                    Circuits.Remove(otherPipe.Circuit); //Circuit gone.
+                                otherPipe.Circuit.Pipes.Remove(otherPipe); //Remove pipe from circuit.
+                                if (circuit != null) //If we found an alternative circuit..
+                                {
+                                    otherPipe.Circuit = circuit; //Assign this pipe to it..
+                                    otherPipe.Circuit.Pipes.Add(otherPipe); //And put it in the list.
+                                }
+                            }
                         }
-                        else if (pipeInQuestion.Circuit != null && circuit == null) //Else if the pipe has a different circuit and we don't already have an alternative circuit..
-                            circuit = pipeInQuestion.Circuit; //Store it so we can swap to that circuit if there's no more keeping us in this one.
                     }
-                        
                 }
-                if (!foundCircuitPipe) //If we didn't find any other connection to the circuit, it's cut off!
-                {
-                    if (otherPipe.Circuit.Pipes.Count == 1) //If this is the last pipe in the circuit..
-                        Circuits.Remove(otherPipe.Circuit); //Circuit gone.
-                    otherPipe.Circuit.Pipes.Remove(otherPipe); //Remove pipe from circuit.
-                    if (circuit != null) //If we found an alternative circuit..
-                    {
-                        otherPipe.Circuit = circuit; //Assign this pipe to it..
-                        otherPipe.Circuit.Pipes.Add(otherPipe); //And put it in the list.
-                    }
-                }
-            });
+            }
         }
-
-        public Pipe[] GetAdjacentPipes(Pipe pipe, bool sameFluidOnly = true)
-        {
-            var pipes = new Pipe[8];
-            int pipeX = pipe.Position.x;
-            int pipeY = pipe.Position.y;
-            for (int x = pipeX - 1; x <= pipeX + 1; x++)
-                for (int y = pipeY - 1; y <= pipeY + 1; y++)
-                {
-                    if (x == pipeX && y == pipeY) //If it's the pipe's position itself.
-                        continue; //Skip.
-                    var arrayX = x - pipeX + 1; //Adjust to array position..
-                    var arrayY = y - pipeY + 1; //Adjust to array position..
-                    var things = map.thingGrid.ThingsAt(new IntVec3(x, y, 0));
-                    foreach (var thing in things)
-                        if (thing is Pipe)
-                        {
-                            var otherPipe = (Pipe)thing;
-                            if (sameFluidOnly && pipe.Fluid == otherPipe.Fluid)
-                                pipes[3 * y + x] = otherPipe; //3 per row * Y coordinate + X coordinate offset
-                        }
-                }
-            return pipes;
-        }
-
-        public void ActOnAdjacentPipes(Pipe pipe, Action<Pipe> action, bool sameFluidOnly = true)
-        {
-            var pipes = new Pipe[8];
-            int pipeX = pipe.Position.x;
-            int pipeY = pipe.Position.y;
-            for (int x = pipeX - 1; x <= pipeX + 1; x++)
-                for (int y = pipeY - 1; y <= pipeY + 1; y++)
-                {
-                    if (x == pipeX && y == pipeY) //If it's the pipe's position itself.
-                        continue; //Skip.
-                    var things = map.thingGrid.ThingsAt(new IntVec3(x, y, 0));
-                    foreach (var thing in things)
-                        if (thing is Pipe)
-                        {
-                            var otherPipe = (Pipe)thing;
-                            if (sameFluidOnly && pipe.Fluid == otherPipe.Fluid)
-                                action(otherPipe);
-                        }
-                }
-        }
-
         public void RegisterUser(FluidUser user)
         {
             if (user is FluidSource)
@@ -170,14 +123,14 @@ namespace UdderlyEvelyn.SimplePipes
                 Log.Error("[Simple Pipes] Attempted to deregister FluidUser that was neither a sink nor a source.");
         }
 
-        public void RecalculateCircuits()
-        {
-            var pipes = map.listerBuildings.AllBuildingsColonistOfClass<Pipe>();
-            foreach (var pipe in pipes)
-            {
-                //Stuff
-            }
-        }
+        //public void RecalculateCircuits()
+        //{
+        //    var pipes = map.listerBuildings.AllBuildingsColonistOfClass<Pipe>();
+        //    foreach (var pipe in pipes)
+        //    {
+                
+        //    }
+        //}
 
         public override void MapComponentTick()
         {
@@ -221,6 +174,13 @@ namespace UdderlyEvelyn.SimplePipes
                         sink.Supplied = false;
                 }
             }
+        }
+
+        public override void ExposeData()
+        {
+            Scribe_Collections.Look(ref Circuits, "Circuits");
+            Scribe_Collections.Look(ref FluidSources, "FluidSources");
+            Scribe_Collections.Look(ref FluidSinks, "FluidSinks");
         }
     }
 }

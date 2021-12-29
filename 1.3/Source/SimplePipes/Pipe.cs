@@ -25,5 +25,13 @@ namespace UdderlyEvelyn.SimplePipes
             Map.GetComponent<MapComponent_SimplePipes>().DeregisterPipe(this);
             base.Destroy(mode);
         }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref Fluid, "Fluid");
+            Scribe_Values.Look(ref Capacity, "Capacity");
+            Scribe_Values.Look(ref Circuit, "Circuit");
+        }
     }
 }

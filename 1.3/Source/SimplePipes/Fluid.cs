@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class Fluid : IEquatable<Fluid>
+    public class Fluid : IEquatable<Fluid>, IExposable
     {
         uint ID;
         string Name;
@@ -15,6 +16,13 @@ namespace UdderlyEvelyn.SimplePipes
         bool IEquatable<Fluid>.Equals(Fluid other)
         {
             return this.ID == other.ID;
+        }
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref ID, "ID");
+            Scribe_Values.Look(ref Name, "Name");
+            Scribe_Values.Look(ref Type, "Type");
         }
     }
 }

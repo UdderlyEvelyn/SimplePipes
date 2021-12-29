@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RimWorld;
+using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class Circuit
+    public class Circuit : IExposable
     {
         public List<Pipe> Pipes;
         public float Capacity;
@@ -28,6 +30,14 @@ namespace UdderlyEvelyn.SimplePipes
             Pipes.AddRange(circuit.Pipes);
             Capacity += circuit.Capacity;
             Content += circuit.Content;
+        }
+
+        void IExposable.ExposeData()
+        {
+            Scribe_Collections.Look(ref Pipes, "Pipes");
+            Scribe_Values.Look(ref Capacity, "Capacity");
+            Scribe_Values.Look(ref Content, "Content");
+            Scribe_Values.Look(ref Fluid, "Fluid");
         }
     }
 }

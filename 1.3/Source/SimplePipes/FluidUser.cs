@@ -22,5 +22,11 @@ namespace UdderlyEvelyn.SimplePipes
             Map.GetComponent<MapComponent_SimplePipes>().DeregisterUser(this);
             base.Destroy(mode);
         }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref AmountPerTick, "AmountPerTick");
+        }
     }
 }
