@@ -8,7 +8,7 @@ using RimWorld;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class FluidSink : FluidUser
+    public class Sink : ResourceUser
     {
         public float LastTickPulled = 0;
         public float TicksPerPull;

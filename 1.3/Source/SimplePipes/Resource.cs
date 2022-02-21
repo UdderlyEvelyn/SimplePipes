@@ -7,13 +7,13 @@ using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class Fluid : IEquatable<Fluid>, IExposable
+    public class Resource : IEquatable<Resource>, IExposable
     {
-        uint ID;
-        string Name;
-        FluidType Type = FluidType.None;
+        public uint ID;
+        public string Name;
+        public ResourceType Type = ResourceType.None;
 
-        bool IEquatable<Fluid>.Equals(Fluid other)
+        bool IEquatable<Resource>.Equals(Resource other)
         {
             return this.ID == other.ID;
         }

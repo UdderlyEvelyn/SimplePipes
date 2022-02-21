@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public enum FluidType : int
+    public enum ResourceType : int
     {
-        None = 0,
-        Liquid = 1,
-        Gas = 2,
+        None,
+        Solid,
+        Liquid,
+        Gas,
     }
 }

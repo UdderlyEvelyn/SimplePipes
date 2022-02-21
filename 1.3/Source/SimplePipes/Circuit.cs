@@ -13,7 +13,7 @@ namespace UdderlyEvelyn.SimplePipes
         public List<Pipe> Pipes;
         public float Capacity;
         public float Content;
-        public Fluid Fluid;
+        public Resource Resource;
 
         public Circuit(IEnumerable<Pipe> pipes = null)
         {
@@ -23,9 +23,11 @@ namespace UdderlyEvelyn.SimplePipes
                 Pipes = new List<Pipe>();
         }
 
-        public void Merge(Circuit circuit)
+        public virtual void Merge(Circuit circuit)
         {
-            foreach (Pipe pipe in circuit.Pipes) //Loop through those pipes..
+            if (Resource != circuit.Resource)
+                return; //Don't.
+            foreach (var pipe in circuit.Pipes) //Loop through those pipes..
                 pipe.Circuit = this; //Assign them to this circuit.
             Pipes.AddRange(circuit.Pipes);
             Capacity += circuit.Capacity;
@@ -37,7 +39,7 @@ namespace UdderlyEvelyn.SimplePipes
             Scribe_Collections.Look(ref Pipes, "Pipes");
             Scribe_Values.Look(ref Capacity, "Capacity");
             Scribe_Values.Look(ref Content, "Content");
-            Scribe_Values.Look(ref Fluid, "Fluid");
+            Scribe_Values.Look(ref Resource, "Resource");
         }
     }
 }

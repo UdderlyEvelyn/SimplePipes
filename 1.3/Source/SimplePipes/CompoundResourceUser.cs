@@ -7,19 +7,20 @@ using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class FluidUser : Pipe
+    public class CompoundResourceUser : CompoundPipe
     {
-        public float AmountPerTick;
+        public float[] AmountPerTick;
+        public bool Enabled = true;
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
         {
             base.SpawnSetup(map, respawningAfterLoad);
-            map.GetComponent<MapComponent_SimplePipes>().RegisterUser(this);
+            MapComponentCache<MapComponent_SimplePipes>.GetFor(Map).RegisterUser(this);
         }
 
         public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
         {
-            Map.GetComponent<MapComponent_SimplePipes>().DeregisterUser(this);
+            MapComponentCache<MapComponent_SimplePipes>.GetFor(Map).DeregisterUser(this);
             base.Destroy(mode);
         }
 
@@ -27,6 +28,7 @@ namespace UdderlyEvelyn.SimplePipes
         {
             base.ExposeData();
             Scribe_Values.Look(ref AmountPerTick, "AmountPerTick");
+            Scribe_Values.Look(ref Enabled, "Enabled");
         }
     }
 }

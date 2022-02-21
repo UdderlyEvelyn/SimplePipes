@@ -8,29 +8,11 @@ using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class Pipe : Building
+    public class CompoundPipe : Building
     {
-        protected Resource _resource;
-        protected float _capacity;
-        protected Circuit _circuit;
-
-        public Resource Resource
-        {
-            get => _resource;
-            set => _resource = value;
-        }
-
-        public float Capacity
-        {
-            get => _capacity;
-            set => _capacity = value;
-        }
-
-        public Circuit Circuit
-        {
-            get => _circuit;
-            set => _circuit = value;
-        }
+        public Resource[] Resources;
+        public float[] Capacities;
+        public CompoundCircuit Circuit;
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
         {
@@ -47,9 +29,9 @@ namespace UdderlyEvelyn.SimplePipes
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref _resource, "Resource");
-            Scribe_Values.Look(ref _capacity, "Capacity");
-            Scribe_Values.Look(ref _circuit, "Circuit");
+            Scribe_Values.Look(ref Resources, "Resources");
+            Scribe_Values.Look(ref Capacities, "Capacities");
+            Scribe_Values.Look(ref Circuit, "Circuit");
         }
     }
 }

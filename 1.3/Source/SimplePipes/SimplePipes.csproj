@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <LangVersion>Preview</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -53,16 +54,22 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CompoundCircuit.cs" />
     <Compile Include="Circuit.cs" />
-    <Compile Include="Fluid.cs" />
-    <Compile Include="FluidSink.cs" />
-    <Compile Include="FluidSource.cs" />
-    <Compile Include="FluidUser.cs" />
-    <Compile Include="FluidType.cs" />
+    <Compile Include="Resource.cs" />
+    <Compile Include="CompoundResourceUser.cs" />
+    <Compile Include="CompoundSink.cs" />
+    <Compile Include="Sink.cs" />
+    <Compile Include="CompoundSource.cs" />
+    <Compile Include="Source.cs" />
+    <Compile Include="ResourceUser.cs" />
+    <Compile Include="ResourceType.cs" />
     <Compile Include="MapComponent_SimplePipes.cs" />
+    <Compile Include="CompoundPipe.cs" />
     <Compile Include="Pipe.cs" />
     <Compile Include="SimplePipes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="MapComponentCache.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

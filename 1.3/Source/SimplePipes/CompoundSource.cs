@@ -8,23 +8,24 @@ using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class FluidSource : FluidUser
+    public class CompoundSource : CompoundResourceUser
     {
-        public float OriginalFluidTotal;
-        public float Remaining;
-        public bool LimitedAmount;
-        public bool Empty = false;
+        public float[] OriginalResourceTotal;
+        public float[] Remaining;
+        public bool[] LimitedAmount;
+        public bool[] Empty;
 
-        public FluidSource()
+        public CompoundSource()
         {
-            if (LimitedAmount)
-                Remaining = OriginalFluidTotal;
+            for (int i = 0; i < Resources.Length; i++)
+                if (LimitedAmount[i])
+                    Remaining[i] = OriginalResourceTotal[i];
         }
 
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref OriginalFluidTotal, "OriginalFluidTotal");
+            Scribe_Values.Look(ref OriginalResourceTotal, "OriginalResourceTotal");
             Scribe_Values.Look(ref Remaining, "Remaining");
             Scribe_Values.Look(ref LimitedAmount, "LimitedAmount");
             Scribe_Values.Look(ref Empty, "Empty");
