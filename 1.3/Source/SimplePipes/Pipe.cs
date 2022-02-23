@@ -8,11 +8,13 @@ using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class Pipe : Building
+    public class Pipe : Building, IPipe
     {
         protected Resource _resource;
         protected float _capacity;
         protected Circuit _circuit;
+
+        public Thing Thing => this;
 
         public Resource Resource
         {

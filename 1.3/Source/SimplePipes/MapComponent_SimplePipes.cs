@@ -11,23 +11,23 @@ namespace UdderlyEvelyn.SimplePipes
     public class MapComponent_SimplePipes : MapComponent
     {
         public List<Circuit> Circuits = new List<Circuit>();
-        public List<Sink> Sinks = new List<Sink>();
-        public List<Source> Sources = new List<Source>();
+        public List<ISink> Sinks = new List<ISink>();
+        public List<ISource> Sources = new List<ISource>();
 
         public List<CompoundCircuit> CompoundCircuits = new List<CompoundCircuit>();
-        public List<CompoundSink> CompoundSinks = new List<CompoundSink>();
-        public List<CompoundSource> CompoundSources = new List<CompoundSource>();
+        public List<ICompoundSink> CompoundSinks = new List<ICompoundSink>();
+        public List<ICompoundSource> CompoundSources = new List<ICompoundSource>();
 
         public MapComponent_SimplePipes(Map map) : base(map)
         {
 
         }
 
-        public void RegisterPipe(Pipe pipe)
+        public void RegisterPipe(IPipe pipe)
         {
             List<Pipe> foundPipes = new List<Pipe>();
             List<Thing> things = new List<Thing>();
-            GenAdjFast.AdjacentThings8Way(pipe, things);
+            GenAdjFast.AdjacentThings8Way(pipe.Thing, things);
             for (int i = 0; i < things.Count; i++) //Loop through things adjacent to the pipe we're registering..
             {
                 if (things[i] is Pipe otherPipe) //If we find a pipe..
@@ -59,21 +59,21 @@ namespace UdderlyEvelyn.SimplePipes
 
         }
 
-        public void DeregisterPipe(Pipe pipe)
+        public void DeregisterPipe(IPipe pipe)
         {
             var foundCircuitPipe = false;
             Circuit circuit = null;
             List<Thing> things = new List<Thing>();
-            GenAdjFast.AdjacentThings8Way(pipe, things);
+            GenAdjFast.AdjacentThings8Way(pipe.Thing, things);
             for (int i = 0; i < things.Count; i++) //Loop through things adjacent to the pipe we're deregistering..
             {
-                if (things[i] is Pipe otherPipe) //If we find a pipe..
+                if (things[i] is IPipe otherPipe) //If we find a pipe..
                 {
                     List<Thing> thingsInner = new List<Thing>();
-                    GenAdjFast.AdjacentThings8Way(otherPipe, thingsInner);
+                    GenAdjFast.AdjacentThings8Way(otherPipe.Thing, thingsInner);
                     for (int j = 0; j < thingsInner.Count; j++) //Loop through things around the other pipe..?
                     {
-                        if (thingsInner[j] is Pipe pipeInQuestion) //If something around the other pipe is also a pipe..
+                        if (thingsInner[j] is IPipe pipeInQuestion) //If something around the other pipe is also a pipe..
                         {
                             if (pipeInQuestion != pipe) //Skip the pipe we're yeeting..
                             {
@@ -102,34 +102,34 @@ namespace UdderlyEvelyn.SimplePipes
             }
         }
 
-        public void RegisterUser(ResourceUser user)
+        public void RegisterUser(IResourceUser user)
         {
-            if (user is Source)
-                Sources.Add((Source)user);
-            else if (user is Sink)
-                Sinks.Add((Sink)user);
+            if (user is ISource)
+                Sources.Add((ISource)user);
+            else if (user is ISink)
+                Sinks.Add((ISink)user);
             else
                 Log.Error("[Simple Pipes] Attempted to register ResourceUser that was neither a sink nor a source.");
         }
 
-        public void DeregisterUser(ResourceUser user)
+        public void DeregisterUser(IResourceUser user)
         {
-            if (user is Source)
-                Sources.Remove((Source)user);
-            else if (user is Sink)
-                Sinks.Remove((Sink)user);
+            if (user is ISource)
+                Sources.Remove((ISource)user);
+            else if (user is ISink)
+                Sinks.Remove((ISink)user);
             else
                 Log.Error("[Simple Pipes] Attempted to deregister ResourceUser that was neither a sink nor a source.");
         }
 
-        public void RegisterPipe(CompoundPipe pipe)
+        public void RegisterPipe(ICompoundPipe pipe)
         {
-            List<CompoundPipe> foundPipes = new List<CompoundPipe>();
+            List<ICompoundPipe> foundPipes = new List<ICompoundPipe>();
             List<Thing> things = new List<Thing>();
-            GenAdjFast.AdjacentThings8Way(pipe, things);
+            GenAdjFast.AdjacentThings8Way(pipe.Thing, things);
             for (int i = 0; i < things.Count; i++) //Loop through things adjacent to the pipe we're registering..
             {
-                if (things[i] is CompoundPipe otherPipe) //If we find a pipe..
+                if (things[i] is ICompoundPipe otherPipe) //If we find a pipe..
                 {
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
@@ -158,24 +158,21 @@ namespace UdderlyEvelyn.SimplePipes
 
         }
 
-        public void DeregisterPipe(CompoundPipe pipe)
+        public void DeregisterPipe(ICompoundPipe pipe)
         {
             var foundCircuitPipe = false;
             CompoundCircuit circuit = null;
             List<Thing> things = new List<Thing>();
-            GenAdjFast.AdjacentThings8Way(pipe, things);
+            GenAdjFast.AdjacentThings8Way(pipe.Thing, things);
             for (int i = 0; i < things.Count; i++)
             {
-                Thing thing = things[i];
-                if (thing is CompoundPipe)
+                if (things[i] is ICompoundPipe otherPipe)
                 {
-                    var otherPipe = (CompoundPipe)thing;
                     List<Thing> thingsInner = new List<Thing>();
-                    GenAdjFast.AdjacentThings8Way(otherPipe, thingsInner);
+                    GenAdjFast.AdjacentThings8Way(otherPipe.Thing, thingsInner);
                     for (int j = 0; j < thingsInner.Count; j++)
                     {
-                        Thing thingInner = thingsInner[j];
-                        if (thingInner is CompoundPipe pipeInQuestion)
+                        if (thingsInner[j] is ICompoundPipe pipeInQuestion)
                         {
                             if (pipeInQuestion != pipe) //Skip the pipe we're yeeting..
                             {
@@ -204,22 +201,22 @@ namespace UdderlyEvelyn.SimplePipes
             }
         }
 
-        public void RegisterUser(CompoundResourceUser user)
+        public void RegisterUser(ICompoundResourceUser user)
         {
-            if (user is CompoundSource)
-                CompoundSources.Add((CompoundSource)user);
-            else if (user is CompoundSink)
-                CompoundSinks.Add((CompoundSink)user);
+            if (user is ICompoundSource)
+                CompoundSources.Add((ICompoundSource)user);
+            else if (user is ICompoundSink)
+                CompoundSinks.Add((ICompoundSink)user);
             else
                 Log.Error("[Simple Pipes] Attempted to register CompoundResourceUser that was neither a sink nor a source.");
         }
 
-        public void DeregisterUser(CompoundResourceUser user)
+        public void DeregisterUser(ICompoundResourceUser user)
         {
-            if (user is CompoundSource)
-                CompoundSources.Remove((CompoundSource)user);
-            else if (user is CompoundSink)
-                CompoundSinks.Remove((CompoundSink)user);
+            if (user is ICompoundSource)
+                CompoundSources.Remove((ICompoundSource)user);
+            else if (user is ICompoundSink)
+                CompoundSinks.Remove((ICompoundSink)user);
             else
                 Log.Error("[Simple Pipes] Attempted to deregister CompoundResourceUser that was neither a sink nor a source.");
         }

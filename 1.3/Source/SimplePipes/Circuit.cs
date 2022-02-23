@@ -10,17 +10,17 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class Circuit : IExposable
     {
-        public List<Pipe> Pipes;
+        public List<IPipe> Pipes;
         public float Capacity;
         public float Content;
         public Resource Resource;
 
-        public Circuit(IEnumerable<Pipe> pipes = null)
+        public Circuit(IEnumerable<IPipe> pipes = null)
         {
             if (pipes != null)
-                Pipes = new List<Pipe>(pipes);
+                Pipes = new List<IPipe>(pipes);
             else
-                Pipes = new List<Pipe>();
+                Pipes = new List<IPipe>();
         }
 
         public virtual void Merge(Circuit circuit)

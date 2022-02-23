@@ -8,18 +8,36 @@ using RimWorld;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class Sink : ResourceUser
+    public class Sink : ResourceUser, ISink
     {
-        public float LastTickPulled = 0;
-        public float TicksPerPull;
-        public bool Supplied = false;
+        protected float _lastTickPulled = 0;
+        protected float _ticksPerPull;
+        protected bool _supplied = false;
+
+        public float LastTickPulled
+        {
+            get => _lastTickPulled;
+            set => _lastTickPulled = value;
+        }
+
+        public float TicksPerPull
+        {
+            get => _ticksPerPull;
+            set => _ticksPerPull = value;
+        }
+
+        public bool Supplied
+        {
+            get => _supplied;
+            set => _supplied = value;
+        }
 
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref LastTickPulled, "LastTickPulled");
-            Scribe_Values.Look(ref TicksPerPull, "TicksPerPull");
-            Scribe_Values.Look(ref Supplied, "Supplied");
+            Scribe_Values.Look(ref _lastTickPulled, "LastTickPulled");
+            Scribe_Values.Look(ref _ticksPerPull, "TicksPerPull");
+            Scribe_Values.Look(ref _supplied, "Supplied");
         }
     }
 }

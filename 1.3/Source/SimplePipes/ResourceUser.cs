@@ -7,10 +7,22 @@ using Verse;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public class ResourceUser : Pipe
+    public class ResourceUser : Pipe, IResourceUser
     {
-        public float AmountPerTick;
-        public bool Enabled = true;
+        protected float _amountPerTick;
+        protected bool _enabled = true;
+
+        public float AmountPerTick
+        {
+            get => _amountPerTick;
+            set => _amountPerTick = value;
+        }
+
+        public bool Enabled
+        {
+            get => _enabled;
+            set => _enabled = value;
+        }
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
         {
@@ -27,8 +39,8 @@ namespace UdderlyEvelyn.SimplePipes
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref AmountPerTick, "AmountPerTick");
-            Scribe_Values.Look(ref Enabled, "Enabled");
+            Scribe_Values.Look(ref _amountPerTick, "AmountPerTick");
+            Scribe_Values.Look(ref _enabled, "Enabled");
         }
     }
 }

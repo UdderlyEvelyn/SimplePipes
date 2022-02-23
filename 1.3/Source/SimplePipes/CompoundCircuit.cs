@@ -10,17 +10,17 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class CompoundCircuit : IExposable
     {
-        public List<CompoundPipe> Pipes;
+        public List<ICompoundPipe> Pipes;
         public float[] Capacities;
         public float[] Contents;
         public Resource[] Resources;
 
-        public CompoundCircuit(IEnumerable<CompoundPipe> pipes = null)
+        public CompoundCircuit(IEnumerable<ICompoundPipe> pipes = null)
         {
             if (pipes != null)
-                pipes = new List<CompoundPipe>(pipes);
+                pipes = new List<ICompoundPipe>(pipes);
             else
-                pipes = new List<CompoundPipe>();
+                pipes = new List<ICompoundPipe>();
         }
 
         public virtual void Merge(CompoundCircuit circuit)

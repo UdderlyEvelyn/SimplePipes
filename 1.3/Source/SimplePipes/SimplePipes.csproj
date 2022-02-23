@@ -56,6 +56,14 @@
   <ItemGroup>
     <Compile Include="CompoundCircuit.cs" />
     <Compile Include="Circuit.cs" />
+    <Compile Include="ICompoundPipe.cs" />
+    <Compile Include="ICompoundResourceUser.cs" />
+    <Compile Include="ICompoundSink.cs" />
+    <Compile Include="ICompoundSource.cs" />
+    <Compile Include="ISource.cs" />
+    <Compile Include="ISink.cs" />
+    <Compile Include="IResourceUser.cs" />
+    <Compile Include="IPipe.cs" />
     <Compile Include="Resource.cs" />
     <Compile Include="CompoundResourceUser.cs" />
     <Compile Include="CompoundSink.cs" />
