@@ -10,10 +10,17 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class Source : ResourceUser, ISource
     {
+        protected float _pushedPerTick;
         protected float _originalResourceTotal;
         protected float _remaining;
         protected bool _limitedAmount;
         protected bool _empty = false;
+
+        public float PushedPerTick
+        {
+            get => _pushedPerTick;
+            set => _pushedPerTick = value;
+        }
 
         public float OriginalResourceTotal
         {
@@ -48,6 +55,7 @@ namespace UdderlyEvelyn.SimplePipes
         public override void ExposeData()
         {
             base.ExposeData();
+            Scribe_Values.Look(ref _pushedPerTick, "PushedPerTick");
             Scribe_Values.Look(ref _originalResourceTotal, "OriginalResourceTotal");
             Scribe_Values.Look(ref _remaining, "Remaining");
             Scribe_Values.Look(ref _limitedAmount, "LimitedAmount");

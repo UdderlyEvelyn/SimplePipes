@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace UdderlyEvelyn.SimplePipes
 {
-    public interface IResourceUser : IPipe
+    public interface ICompoundHub : ICompoundSink, ICompoundSource
     {
-        public bool Enabled { get; set; }
+
     }
 }

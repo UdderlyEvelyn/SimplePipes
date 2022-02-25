@@ -9,14 +9,7 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class CompoundResourceUser : CompoundPipe, ICompoundResourceUser
     {
-        protected float[] _amountPerTick;
         protected bool _enabled = true;
-
-        public float[] AmountPerTick
-        {
-            get => _amountPerTick;
-            set => _amountPerTick = value;
-        }
 
         public bool Enabled
         {
@@ -39,7 +32,6 @@ namespace UdderlyEvelyn.SimplePipes
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref _amountPerTick, "AmountPerTick");
             Scribe_Values.Look(ref _enabled, "Enabled");
         }
     }

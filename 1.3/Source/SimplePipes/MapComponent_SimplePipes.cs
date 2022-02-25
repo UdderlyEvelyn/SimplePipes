@@ -11,12 +11,14 @@ namespace UdderlyEvelyn.SimplePipes
     public class MapComponent_SimplePipes : MapComponent
     {
         public List<Circuit> Circuits = new List<Circuit>();
-        public List<ISink> Sinks = new List<ISink>();
+        public List<IHub> Hubs = new List<IHub>();
         public List<ISource> Sources = new List<ISource>();
+        public List<ISink> Sinks = new List<ISink>();
 
         public List<CompoundCircuit> CompoundCircuits = new List<CompoundCircuit>();
-        public List<ICompoundSink> CompoundSinks = new List<ICompoundSink>();
+        public List<ICompoundHub> CompoundHubs = new List<ICompoundHub>();
         public List<ICompoundSource> CompoundSources = new List<ICompoundSource>();
+        public List<ICompoundSink> CompoundSinks = new List<ICompoundSink>();
 
         public MapComponent_SimplePipes(Map map) : base(map)
         {
@@ -56,7 +58,8 @@ namespace UdderlyEvelyn.SimplePipes
                     foundPipe.Circuit = pipe.Circuit; //Assign them to this one.
                     pipe.Circuit.Pipes.Add(foundPipe);
                 }
-
+            if (pipe is IResourceUser user)
+                RegisterUser(user);
         }
 
         public void DeregisterPipe(IPipe pipe)
@@ -100,6 +103,8 @@ namespace UdderlyEvelyn.SimplePipes
                     }
                 }
             }
+            if (pipe is IResourceUser user)
+                DeregisterUser(user);
         }
 
         public void RegisterUser(IResourceUser user)
@@ -155,7 +160,8 @@ namespace UdderlyEvelyn.SimplePipes
                     foundPipe.Circuit = pipe.Circuit; //Assign them to this one.
                     pipe.Circuit.Pipes.Add(foundPipe);
                 }
-
+            if (pipe is ICompoundResourceUser user)
+                RegisterUser(user);
         }
 
         public void DeregisterPipe(ICompoundPipe pipe)
@@ -199,26 +205,32 @@ namespace UdderlyEvelyn.SimplePipes
                     }
                 }
             }
+            if (pipe is ICompoundResourceUser user)
+                DeregisterUser(user);
         }
 
         public void RegisterUser(ICompoundResourceUser user)
         {
-            if (user is ICompoundSource)
-                CompoundSources.Add((ICompoundSource)user);
-            else if (user is ICompoundSink)
-                CompoundSinks.Add((ICompoundSink)user);
+            if (user is ICompoundHub hub)
+                CompoundHubs.Add(hub);
+            else if (user is ICompoundSource source)
+                CompoundSources.Add(source);
+            else if (user is ICompoundSink sink)
+                CompoundSinks.Add(sink);
             else
-                Log.Error("[Simple Pipes] Attempted to register CompoundResourceUser that was neither a sink nor a source.");
+                Log.Error("[Simple Pipes] Attempted to register CompoundResourceUser that was neither a hub, a sink nor a source.");
         }
 
         public void DeregisterUser(ICompoundResourceUser user)
         {
-            if (user is ICompoundSource)
-                CompoundSources.Remove((ICompoundSource)user);
-            else if (user is ICompoundSink)
-                CompoundSinks.Remove((ICompoundSink)user);
+            if (user is ICompoundHub hub)
+                CompoundHubs.Remove(hub);
+            else if (user is ICompoundSource source)
+                CompoundSources.Remove(source);
+            else if (user is ICompoundSink sink)
+                CompoundSinks.Remove(sink);
             else
-                Log.Error("[Simple Pipes] Attempted to deregister CompoundResourceUser that was neither a sink nor a source.");
+                Log.Error("[Simple Pipes] Attempted to deregister CompoundResourceUser that was neither a hub, a sink nor a source.");
         }
 
         //public void RecalculateCircuits()
@@ -233,14 +245,93 @@ namespace UdderlyEvelyn.SimplePipes
         public override void MapComponentTick()
         {
             int tick = Find.TickManager.TicksGame;
+            foreach (var hub in Hubs)
+            {
+                if (hub.LimitedAmount && hub.Empty) //It's limited and out of stuff..
+                    continue; //Skip!
+                hub.Circuit.Content += hub.PushedPerTick; //Contribute rehubs..
+                if (hub.LimitedAmount) //If it's limited..
+                {
+                    hub.Remaining -= hub.PushedPerTick; //Reduce remaining rehubs..
+                    if (hub.Remaining <= 0) //If we're out entirely..
+                    {
+                        hub.Empty = true; //Mark it empty so we can skip it in the future.
+                        hub.Remaining = 0; //Make sure it's not <0.
+                    }
+                }
+                if (hub.TicksPerPull > 0) //If it has a TicksPerPull..
+                {
+                    if (tick - hub.LastTickPulled >= hub.TicksPerPull) //If it's time to pull..
+                    {
+                        if (hub.Circuit.Content >= hub.PulledPerTick) //There's enough resources..
+                        {
+                            hub.Circuit.Content -= hub.PulledPerTick; //Pull
+                            hub.LastTickPulled = tick; //We have pulled, so record that.
+                            hub.Supplied = true;
+                        }
+                        else
+                            hub.Supplied = false;
+                    }
+                    else if (hub.Circuit.Content >= hub.PulledPerTick) //There's enough resources..
+                    {
+                        hub.Circuit.Content -= hub.PulledPerTick; //Pull
+                        hub.Supplied = true;
+                    }
+                    else
+                        hub.Supplied = false;
+                }
+            }
+            foreach (var hub in CompoundHubs)
+            {
+                for (int i = 0; i < hub.Resources.Length; i++)
+                {
+                    var limitedAmount = hub.LimitedAmount[i];
+                    var yield = hub.PushedPerTick[i];
+                    if (limitedAmount && hub.Empty[i]) //It's limited and out of stuff..
+                        continue; //Skip!
+                    hub.Circuit.Contents[i] += yield; //Contribute rehubs..
+                    if (limitedAmount) //If it's limited..
+                    {
+                        hub.Remaining[i] -= yield; //Reduce remaining rehubs..
+                        if (hub.Remaining[i] <= 0) //If we're out entirely..
+                        {
+                            hub.Empty[i] = true; //Mark it empty so we can skip it in the future.
+                            hub.Remaining[i] = 0; //Make sure it's not <0.
+                        }
+                    }
+                    var ticksPerPull = hub.TicksPerPull[i];
+                    var cost = hub.PulledPerTick[i];
+                    if (ticksPerPull > 0) //If it has a TicksPerPull..
+                    {
+                        if (tick - hub.LastTickPulled[i] >= ticksPerPull) //If it's time to pull..
+                        {
+                            if (hub.Circuit.Contents[i] >= cost) //There's enough resources..
+                            {
+                                hub.Circuit.Contents[i] -= cost; //Pull
+                                hub.LastTickPulled[i] = tick; //We have pulled, so record that.
+                                hub.Supplied[i] = true;
+                            }
+                            else
+                                hub.Supplied[i] = false;
+                        }
+                        else if (hub.Circuit.Contents[i] >= cost) //There's enough resources..
+                        {
+                            hub.Circuit.Contents[i] -= cost; //Pull
+                            hub.Supplied[i] = true;
+                        }
+                        else
+                            hub.Supplied[i] = false;
+                    }
+                }
+            }
             foreach (var source in Sources)
             {
                 if (source.LimitedAmount && source.Empty) //It's limited and out of stuff..
                     continue; //Skip!
-                source.Circuit.Content += source.AmountPerTick; //Contribute fluid..
+                source.Circuit.Content += source.PushedPerTick; //Contribute resources..
                 if (source.LimitedAmount) //If it's limited..
                 {
-                    source.Remaining -= source.AmountPerTick; //Reduce remaining fluid..
+                    source.Remaining -= source.PushedPerTick; //Reduce remaining resources..
                     if (source.Remaining <= 0) //If we're out entirely..
                     {
                         source.Empty = true; //Mark it empty so we can skip it in the future.
@@ -253,13 +344,13 @@ namespace UdderlyEvelyn.SimplePipes
                 for (int i = 0; i < source.Resources.Length; i++)
                 {
                     var limitedAmount = source.LimitedAmount[i];
-                    var amountPerTick = source.AmountPerTick[i];
+                    var yield = source.PushedPerTick[i];
                     if (limitedAmount && source.Empty[i]) //It's limited and out of stuff..
                         continue; //Skip!
-                    source.Circuit.Contents[i] += amountPerTick; //Contribute fluid..
+                    source.Circuit.Contents[i] += yield; //Contribute resources..
                     if (limitedAmount) //If it's limited..
                     {
-                        source.Remaining[i] -= amountPerTick; //Reduce remaining fluid..
+                        source.Remaining[i] -= yield; //Reduce remaining resources..
                         if (source.Remaining[i] <= 0) //If we're out entirely..
                         {
                             source.Empty[i] = true; //Mark it empty so we can skip it in the future.
@@ -274,18 +365,18 @@ namespace UdderlyEvelyn.SimplePipes
                 {
                     if (tick - sink.LastTickPulled >= sink.TicksPerPull) //If it's time to pull..
                     {
-                        if (sink.Circuit.Content >= sink.AmountPerTick) //There's enough fluid..
+                        if (sink.Circuit.Content >= sink.PulledPerTick) //There's enough resources..
                         {
-                            sink.Circuit.Content -= sink.AmountPerTick; //Pull
+                            sink.Circuit.Content -= sink.PulledPerTick; //Pull
                             sink.LastTickPulled = tick; //We have pulled, so record that.
                             sink.Supplied = true;
                         }
                         else
                             sink.Supplied = false;
                     }
-                    else if (sink.Circuit.Content >= sink.AmountPerTick) //There's enough fluid..
+                    else if (sink.Circuit.Content >= sink.PulledPerTick) //There's enough resources..
                     {
-                        sink.Circuit.Content -= sink.AmountPerTick; //Pull
+                        sink.Circuit.Content -= sink.PulledPerTick; //Pull
                         sink.Supplied = true;
                     }
                     else
@@ -297,23 +388,23 @@ namespace UdderlyEvelyn.SimplePipes
                 for (int i = 0; i < sink.Resources.Length; i++)
                 {
                     var ticksPerPull = sink.TicksPerPull[i];
-                    var amountPerTick = sink.AmountPerTick[i];
+                    var cost = sink.PulledPerTick[i];
                     if (ticksPerPull > 0) //If it has a TicksPerPull..
                     {
                         if (tick - sink.LastTickPulled[i] >= ticksPerPull) //If it's time to pull..
                         {
-                            if (sink.Circuit.Contents[i] >= amountPerTick) //There's enough fluid..
+                            if (sink.Circuit.Contents[i] >= cost) //There's enough resources..
                             {
-                                sink.Circuit.Contents[i] -= amountPerTick; //Pull
+                                sink.Circuit.Contents[i] -= cost; //Pull
                                 sink.LastTickPulled[i] = tick; //We have pulled, so record that.
                                 sink.Supplied[i] = true;
                             }
                             else
                                 sink.Supplied[i] = false;
                         }
-                        else if (sink.Circuit.Contents[i] >= amountPerTick) //There's enough fluid..
+                        else if (sink.Circuit.Contents[i] >= cost) //There's enough resources..
                         {
-                            sink.Circuit.Contents[i] -= amountPerTick; //Pull
+                            sink.Circuit.Contents[i] -= cost; //Pull
                             sink.Supplied[i] = true;
                         }
                         else

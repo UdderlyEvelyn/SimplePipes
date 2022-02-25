@@ -59,7 +59,9 @@
     <Compile Include="ICompoundPipe.cs" />
     <Compile Include="ICompoundResourceUser.cs" />
     <Compile Include="ICompoundSink.cs" />
+    <Compile Include="ICompoundHub.cs" />
     <Compile Include="ICompoundSource.cs" />
+    <Compile Include="IHub.cs" />
     <Compile Include="ISource.cs" />
     <Compile Include="ISink.cs" />
     <Compile Include="IResourceUser.cs" />

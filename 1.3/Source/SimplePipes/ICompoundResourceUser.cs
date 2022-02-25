@@ -8,8 +8,6 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public interface ICompoundResourceUser : ICompoundPipe
     {
-        public float[] AmountPerTick { get; set; }
-
         public bool Enabled { get; set; }
     }
 }

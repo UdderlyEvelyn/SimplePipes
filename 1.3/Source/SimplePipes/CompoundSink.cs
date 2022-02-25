@@ -10,9 +10,16 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class CompoundSink : CompoundResourceUser, ICompoundSink
     {
+        protected float[] _pulledPerTick;
         protected float[] _lastTickPulled;
         protected float[] _ticksPerPull;
         protected bool[] _supplied;
+
+        public float[] PulledPerTick
+        {
+            get => _pulledPerTick;
+            set => _pulledPerTick = value;
+        }
 
         public float[] LastTickPulled
         {
@@ -35,6 +42,7 @@ namespace UdderlyEvelyn.SimplePipes
         public override void ExposeData()
         {
             base.ExposeData();
+            Scribe_Values.Look(ref _pulledPerTick, "PulledPerTick");
             Scribe_Values.Look(ref _lastTickPulled, "LastTickPulled");
             Scribe_Values.Look(ref _ticksPerPull, "TicksPerPull");
             Scribe_Values.Look(ref _supplied, "Supplied");
