@@ -38,7 +38,7 @@ namespace UdderlyEvelyn.SimplePipes
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
                         pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
-                    else //We have a circuit already, we're mixing 'em together into one big circuit now!
+                    else if (pipe.Circuit != otherPipe.Circuit) //We have a circuit already, we're mixing 'em together into one big circuit now!
                     {
                         pipe.Circuit.Merge(otherPipe.Circuit);
                         if (Circuits.Contains(otherPipe.Circuit))
@@ -53,11 +53,14 @@ namespace UdderlyEvelyn.SimplePipes
                 pipe.Circuit = new Circuit(new[] { pipe }) { Capacity = pipe.Capacity, Resource = pipe.Resource }; //New circuit.
                 Circuits.Add(pipe.Circuit); //Register circuit.
             }
+            else
+                addCapacityToCircuit(pipe);
             foreach (var foundPipe in foundPipes) //Go through any pipes we found earlier.
                 if (foundPipe.Circuit == null) //If they don't have a circuit..
                 {
                     foundPipe.Circuit = pipe.Circuit; //Assign them to this one.
                     pipe.Circuit.Pipes.Add(foundPipe);
+                    addCapacityToCircuit(foundPipe);
                 }
             if (pipe is IResourceUser user)
                 RegisterUser(user);
@@ -94,16 +97,19 @@ namespace UdderlyEvelyn.SimplePipes
                                 if (otherPipe.Circuit.Pipes.Count == 1) //If this is the last pipe in the circuit..
                                     Circuits.Remove(otherPipe.Circuit); //Circuit gone.
                                 otherPipe.Circuit.Pipes.Remove(otherPipe); //Remove pipe from circuit.
+                                removeCapacityFromCircuit(otherPipe);
                                 if (circuit != null) //If we found an alternative circuit..
                                 {
                                     otherPipe.Circuit = circuit; //Assign this pipe to it..
                                     otherPipe.Circuit.Pipes.Add(otherPipe); //And put it in the list.
+                                    addCapacityToCircuit(otherPipe);
                                 }
                             }
                         }
                     }
                 }
             }
+            removeCapacityFromCircuit(pipe);
             if (pipe is IResourceUser user)
                 DeregisterUser(user);
         }
@@ -144,7 +150,7 @@ namespace UdderlyEvelyn.SimplePipes
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
                         pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
-                    else //We have a circuit already, we're mixing 'em together into one big circuit now!
+                    else if (pipe.Circuit != otherPipe.Circuit) //We have a circuit already, we're mixing 'em together into one big circuit now!
                     {
                         pipe.Circuit.Merge(otherPipe.Circuit);
                         if (CompoundCircuits.Contains(otherPipe.Circuit))
@@ -156,14 +162,17 @@ namespace UdderlyEvelyn.SimplePipes
             }
             if (pipe.Circuit == null) //If we didn't find a circuit after all that..
             {
-                pipe.Circuit = new CompoundCircuit(new[] { pipe }) { Capacities = pipe.Capacities, Resources = pipe.Resources }; //New circuit.
+                pipe.Circuit = new CompoundCircuit(new[] { pipe }) { Capacities = pipe.Capacities, Resources = pipe.Resources, Contents = new float[pipe.Resources.Length] }; //New circuit.
                 CompoundCircuits.Add(pipe.Circuit); //Register circuit.
             }
+            else
+                addCapacityToCompoundCircuit(pipe);
             foreach (var foundPipe in foundPipes) //Go through any pipes we found earlier.
                 if (foundPipe.Circuit == null) //If they don't have a circuit..
                 {
                     foundPipe.Circuit = pipe.Circuit; //Assign them to this one.
                     pipe.Circuit.Pipes.Add(foundPipe);
+                    addCapacityToCompoundCircuit(foundPipe);
                 }
             if (pipe is ICompoundResourceUser user)
                 RegisterUser(user);
@@ -200,16 +209,19 @@ namespace UdderlyEvelyn.SimplePipes
                                 if (otherPipe.Circuit.Pipes.Count == 1) //If this is the last pipe in the circuit..
                                     CompoundCircuits.Remove(otherPipe.Circuit); //Circuit gone.
                                 otherPipe.Circuit.Pipes.Remove(otherPipe); //Remove pipe from circuit.
+                                removeCapacityFromCompoundCircuit(otherPipe);
                                 if (circuit != null) //If we found an alternative circuit..
                                 {
                                     otherPipe.Circuit = circuit; //Assign this pipe to it..
                                     otherPipe.Circuit.Pipes.Add(otherPipe); //And put it in the list.
+                                    addCapacityToCompoundCircuit(otherPipe);
                                 }
                             }
                         }
                     }
                 }
             }
+            removeCapacityFromCompoundCircuit(pipe);
             if (pipe is ICompoundResourceUser user)
                 DeregisterUser(user);
         }
@@ -236,6 +248,33 @@ namespace UdderlyEvelyn.SimplePipes
                 CompoundSinks.Remove(sink);
             else
                 Log.Error("[Simple Pipes] Attempted to deregister CompoundResourceUser that was neither a hub, a sink nor a source.");
+        }
+
+        private void addCapacityToCircuit(IPipe pipe)
+        {
+            pipe.Circuit.Capacity += pipe.Capacity;
+        }
+
+        private void addCapacityToCompoundCircuit(ICompoundPipe pipe)
+        {
+            if (pipe.Circuit.Capacities == null)
+            {
+                Log.Message("[SimplePipes] Circuit capacity was null for compound circuit while adding a pipe's capacity..");
+                pipe.Circuit.Capacities = new float[pipe.Circuit.Capacities.Length];
+            }
+            for (int i = 0; i < pipe.Circuit.Capacities.Length; i++)
+                pipe.Circuit.Capacities[i] += pipe.Capacities[i];
+        }
+
+        private void removeCapacityFromCircuit(IPipe pipe)
+        {
+            pipe.Circuit.Capacity -= pipe.Capacity;
+        }
+
+        private void removeCapacityFromCompoundCircuit(ICompoundPipe pipe)
+        {
+            for (int i = 0; i < pipe.Circuit.Capacities.Length; i++)
+                pipe.Circuit.Capacities[i] -= pipe.Capacities[i];
         }
 
         //This needs a refactor, big time.
@@ -286,7 +325,7 @@ namespace UdderlyEvelyn.SimplePipes
                     var limitedAmount = hub.LimitedAmount[i];
                     var yield = hub.PushedPerTick[i];
                     if (limitedAmount && hub.Empty[i]) //It's limited and out of stuff..
-                        continue; //Skip!
+                        yield = 0; //Not contributing cuz it's empty!
                     hub.Circuit.Contents[i] += yield; //Contribute resources..
                     if (limitedAmount) //If it's limited..
                     {
