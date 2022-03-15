@@ -14,6 +14,8 @@ namespace UdderlyEvelyn.SimplePipes
         public float Capacity;
         public float Content;
         public Resource Resource;
+        public event Action<float> ExcessiveCapacity;
+        public event Action<float> InsufficientContent;
 
         public Circuit(IEnumerable<IPipe> pipes = null)
         {
@@ -32,6 +34,52 @@ namespace UdderlyEvelyn.SimplePipes
             Pipes.AddRange(circuit.Pipes);
             Capacity += circuit.Capacity;
             Content += circuit.Content;
+        }
+
+        /// <summary>
+        /// Pulls resources out of the circuit manually.
+        /// </summary>
+        /// <param name="value">how much to pull out</param>
+        /// <returns>whether the circuit had enough resources to satisfy the request</returns>
+        public bool Pull(float value)
+        {
+            var newTotal = Content - value;
+            if (newTotal >= 0)
+            {
+                Content -= value;
+                return true;
+            }
+            if (InsufficientContent != null)
+                InsufficientContent(newTotal);
+            return false;
+        }
+
+        /// <summary>
+        /// Pushes resources into the circuit manually.
+        /// </summary>
+        /// <param name="value">how much to push in</param>
+        /// <returns>whether the circuit had enough capacity to satisfy the request</returns>
+        public bool Push(float value)
+        {
+            var newTotal = Content + value;
+            if (newTotal <= Capacity)
+            {
+                Content = newTotal;
+                return true;
+            }
+            if (ExcessiveCapacity != null)
+                ExcessiveCapacity(Capacity - newTotal);
+            return false;
+        }
+
+        internal void _raiseExcessiveCapacity(float amount)
+        {
+            ExcessiveCapacity(amount);
+        }
+
+        internal void _raiseInsufficientContent(float amount)
+        {
+            InsufficientContent(amount);
         }
 
         void IExposable.ExposeData()

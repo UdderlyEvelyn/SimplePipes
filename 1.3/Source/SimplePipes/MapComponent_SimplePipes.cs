@@ -10,15 +10,16 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class MapComponent_SimplePipes : MapComponent
     {
-        public List<Circuit> Circuits = new List<Circuit>();
-        public List<IHub> Hubs = new List<IHub>();
-        public List<ISource> Sources = new List<ISource>();
-        public List<ISink> Sinks = new List<ISink>();
-
-        public List<CompoundCircuit> CompoundCircuits = new List<CompoundCircuit>();
-        public List<ICompoundHub> CompoundHubs = new List<ICompoundHub>();
-        public List<ICompoundSource> CompoundSources = new List<ICompoundSource>();
-        public List<ICompoundSink> CompoundSinks = new List<ICompoundSink>();
+        //Single-Resource System
+        public List<Circuit> Circuits = new();
+        public List<IHub> Hubs = new();
+        public List<ISource> Sources = new();
+        public List<ISink> Sinks = new();
+        //Multi-Resource System
+        public List<CompoundCircuit> CompoundCircuits = new();
+        public List<ICompoundHub> CompoundHubs = new();
+        public List<ICompoundSource> CompoundSources = new();
+        public List<ICompoundSink> CompoundSinks = new();
 
         public MapComponent_SimplePipes(Map map) : base(map)
         {
@@ -109,20 +110,24 @@ namespace UdderlyEvelyn.SimplePipes
 
         public void RegisterUser(IResourceUser user)
         {
-            if (user is ISource)
-                Sources.Add((ISource)user);
-            else if (user is ISink)
-                Sinks.Add((ISink)user);
+            if (user is IHub hub)
+                Hubs.Add(hub);
+            else if (user is ISource source)
+                Sources.Add(source);
+            else if (user is ISink sink)
+                Sinks.Add(sink);
             else
                 Log.Error("[Simple Pipes] Attempted to register ResourceUser that was neither a sink nor a source.");
         }
 
         public void DeregisterUser(IResourceUser user)
         {
-            if (user is ISource)
-                Sources.Remove((ISource)user);
-            else if (user is ISink)
-                Sinks.Remove((ISink)user);
+            if (user is IHub hub)
+                Hubs.Remove(hub);
+            else if (user is ISource source)
+                Sources.Remove(source);
+            else if (user is ISink sink)
+                Sinks.Remove(sink);
             else
                 Log.Error("[Simple Pipes] Attempted to deregister ResourceUser that was neither a sink nor a source.");
         }
@@ -233,15 +238,8 @@ namespace UdderlyEvelyn.SimplePipes
                 Log.Error("[Simple Pipes] Attempted to deregister CompoundResourceUser that was neither a hub, a sink nor a source.");
         }
 
-        //public void RecalculateCircuits()
-        //{
-        //    var pipes = map.listerBuildings.AllBuildingsColonistOfClass<Pipe>();
-        //    foreach (var pipe in pipes)
-        //    {
-
-        //    }
-        //}
-
+        //This needs a refactor, big time.
+        //Change to for loops, find a way to refactor to fewer loops, maybe just loop over all pipes and use HashSets for each type to do quick checks in one loop?
         public override void MapComponentTick()
         {
             int tick = Find.TickManager.TicksGame;
@@ -249,10 +247,10 @@ namespace UdderlyEvelyn.SimplePipes
             {
                 if (hub.LimitedAmount && hub.Empty) //It's limited and out of stuff..
                     continue; //Skip!
-                hub.Circuit.Content += hub.PushedPerTick; //Contribute rehubs..
+                hub.Circuit.Content += hub.PushedPerTick; //Contribute resources..
                 if (hub.LimitedAmount) //If it's limited..
                 {
-                    hub.Remaining -= hub.PushedPerTick; //Reduce remaining rehubs..
+                    hub.Remaining -= hub.PushedPerTick; //Reduce remaining resources..
                     if (hub.Remaining <= 0) //If we're out entirely..
                     {
                         hub.Empty = true; //Mark it empty so we can skip it in the future.
@@ -289,10 +287,10 @@ namespace UdderlyEvelyn.SimplePipes
                     var yield = hub.PushedPerTick[i];
                     if (limitedAmount && hub.Empty[i]) //It's limited and out of stuff..
                         continue; //Skip!
-                    hub.Circuit.Contents[i] += yield; //Contribute rehubs..
+                    hub.Circuit.Contents[i] += yield; //Contribute resources..
                     if (limitedAmount) //If it's limited..
                     {
-                        hub.Remaining[i] -= yield; //Reduce remaining rehubs..
+                        hub.Remaining[i] -= yield; //Reduce remaining resources..
                         if (hub.Remaining[i] <= 0) //If we're out entirely..
                         {
                             hub.Empty[i] = true; //Mark it empty so we can skip it in the future.
@@ -328,6 +326,9 @@ namespace UdderlyEvelyn.SimplePipes
             {
                 if (source.LimitedAmount && source.Empty) //It's limited and out of stuff..
                     continue; //Skip!
+                bool hasTicksPerPush = false;
+                if ((hasTicksPerPush = source.TicksPerPush > 0) && tick - source.LastTickPushed < source.TicksPerPush) //If it has a TicksPerPush and it's not time to push..
+                    continue; //Skip, not yet time!
                 source.Circuit.Content += source.PushedPerTick; //Contribute resources..
                 if (source.LimitedAmount) //If it's limited..
                 {
@@ -338,6 +339,8 @@ namespace UdderlyEvelyn.SimplePipes
                         source.Remaining = 0; //Make sure it's not <0.
                     }
                 }
+                if (hasTicksPerPush)
+                    source.LastTickPushed = tick; //We have pushed, so record that.
             }
             foreach (var source in CompoundSources)
             {
@@ -347,6 +350,9 @@ namespace UdderlyEvelyn.SimplePipes
                     var yield = source.PushedPerTick[i];
                     if (limitedAmount && source.Empty[i]) //It's limited and out of stuff..
                         continue; //Skip!
+                    bool hasTicksPerPush = false;
+                    if ((hasTicksPerPush = source.TicksPerPush[i] > 0) && tick - source.LastTickPushed[i] < source.TicksPerPush[i])//If it has a TicksPerPush and it's not time to push..
+                        continue; //Skip, not yet time!
                     source.Circuit.Contents[i] += yield; //Contribute resources..
                     if (limitedAmount) //If it's limited..
                     {
@@ -357,30 +363,26 @@ namespace UdderlyEvelyn.SimplePipes
                             source.Remaining[i] = 0; //Make sure it's not <0.
                         }
                     }
+                    if (hasTicksPerPush)
+                        source.LastTickPushed[i] = tick;
                 }
             }
             foreach (var sink in Sinks)
             {
-                if (sink.TicksPerPull > 0) //If it has a TicksPerPull..
+                bool hasTicksPerPull = false;
+                if ((hasTicksPerPull = sink.TicksPerPull > 0) && tick - sink.LastTickPulled >= sink.TicksPerPull) //If it has a TicksPerPull and it's not time to pull..
+                    continue; //Skip, not yet time!
+                if (sink.Circuit.Content >= sink.PulledPerTick) //There's enough resources..
                 {
-                    if (tick - sink.LastTickPulled >= sink.TicksPerPull) //If it's time to pull..
-                    {
-                        if (sink.Circuit.Content >= sink.PulledPerTick) //There's enough resources..
-                        {
-                            sink.Circuit.Content -= sink.PulledPerTick; //Pull
-                            sink.LastTickPulled = tick; //We have pulled, so record that.
-                            sink.Supplied = true;
-                        }
-                        else
-                            sink.Supplied = false;
-                    }
-                    else if (sink.Circuit.Content >= sink.PulledPerTick) //There's enough resources..
-                    {
-                        sink.Circuit.Content -= sink.PulledPerTick; //Pull
-                        sink.Supplied = true;
-                    }
-                    else
-                        sink.Supplied = false;
+                    sink.Circuit.Content -= sink.PulledPerTick; //Pull
+                    sink.Supplied = true;
+                    if (hasTicksPerPull)
+                        sink.LastTickPulled = tick; //We have pulled, so record that.
+                }
+                else
+                {
+                    sink.Circuit._raiseInsufficientContent(sink.PulledPerTick - sink.Circuit.Content);
+                    sink.Supplied = false;
                 }
             }
             foreach (var sink in CompoundSinks)
@@ -389,26 +391,21 @@ namespace UdderlyEvelyn.SimplePipes
                 {
                     var ticksPerPull = sink.TicksPerPull[i];
                     var cost = sink.PulledPerTick[i];
-                    if (ticksPerPull > 0) //If it has a TicksPerPull..
+                    bool hasTicksPerPull = false;
+                    if ((hasTicksPerPull = ticksPerPull > 0) && tick - sink.LastTickPulled[i] >= ticksPerPull) //If it has a TicksPerPull and it's not time to pull..
+                        continue; //Skip, not yet time!
+                    if (sink.Circuit.Contents[i] >= cost) //There's enough resources..
                     {
-                        if (tick - sink.LastTickPulled[i] >= ticksPerPull) //If it's time to pull..
-                        {
-                            if (sink.Circuit.Contents[i] >= cost) //There's enough resources..
-                            {
-                                sink.Circuit.Contents[i] -= cost; //Pull
-                                sink.LastTickPulled[i] = tick; //We have pulled, so record that.
-                                sink.Supplied[i] = true;
-                            }
-                            else
-                                sink.Supplied[i] = false;
-                        }
-                        else if (sink.Circuit.Contents[i] >= cost) //There's enough resources..
-                        {
-                            sink.Circuit.Contents[i] -= cost; //Pull
-                            sink.Supplied[i] = true;
-                        }
-                        else
-                            sink.Supplied[i] = false;
+                        sink.Circuit.Contents[i] -= cost; //Pull
+                        sink.LastTickPulled[i] = tick; //We have pulled, so record that.
+                        sink.Supplied[i] = true;
+                        if (hasTicksPerPull)
+                            sink.LastTickPulled[i] = tick; //We have pulled, so record that.
+                    }
+                    else
+                    {
+                        sink.Circuit._raiseInsufficientContent(sink.Resources[i], sink.PulledPerTick[i] - sink.Circuit.Contents[i]);
+                        sink.Supplied[i] = false;
                     }
                 }
             }
@@ -416,12 +413,12 @@ namespace UdderlyEvelyn.SimplePipes
 
         public override void ExposeData()
         {
-            Scribe_Collections.Look(ref Circuits, "Circuits");
-            Scribe_Collections.Look(ref Sources, "Sources");
-            Scribe_Collections.Look(ref Sinks, "Sinks");
-            Scribe_Collections.Look(ref CompoundCircuits, "CompoundCircuits");
-            Scribe_Collections.Look(ref CompoundSources, "CompoundSources");
-            Scribe_Collections.Look(ref CompoundSinks, "CompoundSinks");
+            Scribe_Collections.Look(ref Circuits, "Circuits", LookMode.Reference);
+            Scribe_Collections.Look(ref Sources, "Sources", LookMode.Reference);
+            Scribe_Collections.Look(ref Sinks, "Sinks", LookMode.Reference);
+            Scribe_Collections.Look(ref CompoundCircuits, "CompoundCircuits", LookMode.Reference);
+            Scribe_Collections.Look(ref CompoundSources, "CompoundSources", LookMode.Reference);
+            Scribe_Collections.Look(ref CompoundSinks, "CompoundSinks", LookMode.Reference);
         }
     }
 }

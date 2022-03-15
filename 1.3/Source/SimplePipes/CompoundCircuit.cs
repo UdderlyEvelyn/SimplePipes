@@ -14,6 +14,8 @@ namespace UdderlyEvelyn.SimplePipes
         public float[] Capacities;
         public float[] Contents;
         public Resource[] Resources;
+        public event Action<Resource, float> ExcessiveCapacity;
+        public event Action<Resource, float> InsufficientContent;
 
         public CompoundCircuit(IEnumerable<ICompoundPipe> pipes = null)
         {
@@ -36,6 +38,87 @@ namespace UdderlyEvelyn.SimplePipes
                 Capacities[i] += circuit.Capacities[i];
                 Contents[i] += circuit.Contents[i];
             }
+        }
+
+        /// <summary>
+        /// Pulls resources of a single type out of the circuit manually.
+        /// </summary>
+        /// <param name="value">how much to pull out</param>
+        /// <returns>whether the circuit had enough resources to satisfy the request</returns>
+        public bool Pull(Resource resource, float value)
+        {
+            var i = Array.IndexOf(Resources, resource);
+            if (value <= Contents[i])
+            {
+                Contents[i] -= value;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Pushes resources of a single type into the circuit manually.
+        /// </summary>
+        /// <param name="value">how much to push in</param>
+        /// <returns>whether the circuit had enough capacity to satisfy the request</returns>
+        public bool Push(Resource resource, float value)
+        {
+            var i = Array.IndexOf(Resources, resource);
+            var newTotal = Contents[i] + value;
+            if (newTotal <= Capacities[i])
+            {
+                Contents[i] = newTotal;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Pulls resources out of the circuit manually.
+        /// </summary>
+        /// <param name="value">how much to pull out</param>
+        /// <returns>whether the circuit had enough resources to satisfy the request</returns>
+        public bool Pull(float[] values)
+        {
+            float[] newValues = new float[values.Length];
+            for (int i = 0; i < values.Length; ++i)
+                if ((newValues[i] = Contents[i] - values[i]) < 0)
+                {
+                    if (InsufficientContent != null)
+                        InsufficientContent(Resources[i], newValues[i]);
+                    return false;
+                }
+            Contents = newValues;
+            return true;
+        }
+
+        /// <summary>
+        /// Pushes resources into the circuit manually.
+        /// </summary>
+        /// <param name="value">how much to push in</param>
+        /// <returns>whether the circuit had enough capacity to satisfy the request</returns>
+        public bool Push(float[] values)
+        {
+            float[] newValues = new float[values.Length];
+            for (int i = 0; i < values.Length; ++i)
+                if ((newValues[i] = Contents[i] + values[i]) > Capacities[i])
+                {
+                    if (ExcessiveCapacity != null)
+                        ExcessiveCapacity(Resources[i], Capacities[i] - newValues[i]);
+                    return false;
+                }
+            Contents = newValues;
+            return true;
+        }
+
+        internal void _raiseExcessiveCapacity(Resource resource, float amount)
+        {
+            ExcessiveCapacity(resource, amount);
+        }
+
+        internal void _raiseInsufficientContent(Resource resource, float amount)
+        {
+            InsufficientContent(resource, amount);
         }
 
         void IExposable.ExposeData()
