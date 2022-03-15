@@ -257,11 +257,6 @@ namespace UdderlyEvelyn.SimplePipes
 
         private void addCapacityToCompoundCircuit(ICompoundPipe pipe)
         {
-            if (pipe.Circuit.Capacities == null)
-            {
-                Log.Message("[SimplePipes] Circuit capacity was null for compound circuit while adding a pipe's capacity..");
-                pipe.Circuit.Capacities = new float[pipe.Circuit.Capacities.Length];
-            }
             for (int i = 0; i < pipe.Circuit.Capacities.Length; i++)
                 pipe.Circuit.Capacities[i] += pipe.Capacities[i];
         }
@@ -284,10 +279,13 @@ namespace UdderlyEvelyn.SimplePipes
             int tick = Find.TickManager.TicksGame;
             foreach (var hub in Hubs)
             {
+                var yield = hub.PushedPerTick;
                 if (hub.LimitedAmount && hub.Empty) //It's limited and out of stuff..
-                    continue; //Skip!
-                hub.Circuit.Content += hub.PushedPerTick; //Contribute resources..
-                if (hub.LimitedAmount) //If it's limited..
+                    yield = 0; //Skip!
+                bool hasTicksPerPush = false;
+                if ((hasTicksPerPush = hub.TicksPerPush > 0) && tick - hub.LastTickPushed < hub.TicksPerPush) //If it has a TicksPerPush and it's not time to push..
+                    yield = 0; //Skip, not yet time!
+                if (hub.Circuit.Push(yield) && hub.LimitedAmount) //If it's limited..
                 {
                     hub.Remaining -= hub.PushedPerTick; //Reduce remaining resources..
                     if (hub.Remaining <= 0) //If we're out entirely..
@@ -326,8 +324,10 @@ namespace UdderlyEvelyn.SimplePipes
                     var yield = hub.PushedPerTick[i];
                     if (limitedAmount && hub.Empty[i]) //It's limited and out of stuff..
                         yield = 0; //Not contributing cuz it's empty!
-                    hub.Circuit.Contents[i] += yield; //Contribute resources..
-                    if (limitedAmount) //If it's limited..
+                    bool hasTicksPerPush = false;
+                    if ((hasTicksPerPush = hub.TicksPerPush[i] > 0) && tick - hub.LastTickPushed[i] < hub.TicksPerPush[i]) //If it has a TicksPerPush and it's not time to push..
+                        yield = 0; //Skip, not yet time!
+                    if (hub.Circuit.Push(hub.Resources[i], yield) && limitedAmount) //If it's limited..
                     {
                         hub.Remaining[i] -= yield; //Reduce remaining resources..
                         if (hub.Remaining[i] <= 0) //If we're out entirely..
@@ -336,6 +336,8 @@ namespace UdderlyEvelyn.SimplePipes
                             hub.Remaining[i] = 0; //Make sure it's not <0.
                         }
                     }
+                    if (hasTicksPerPush && yield > 0)
+                        hub.LastTickPushed[i] = tick; //We have pushed, so record that.
                     var ticksPerPull = hub.TicksPerPull[i];
                     var cost = hub.PulledPerTick[i];
                     if (ticksPerPull > 0) //If it has a TicksPerPull..
@@ -368,8 +370,7 @@ namespace UdderlyEvelyn.SimplePipes
                 bool hasTicksPerPush = false;
                 if ((hasTicksPerPush = source.TicksPerPush > 0) && tick - source.LastTickPushed < source.TicksPerPush) //If it has a TicksPerPush and it's not time to push..
                     continue; //Skip, not yet time!
-                source.Circuit.Content += source.PushedPerTick; //Contribute resources..
-                if (source.LimitedAmount) //If it's limited..
+                if (source.Circuit.Push(source.PushedPerTick) && source.LimitedAmount) //If it pushes and it's limited..
                 {
                     source.Remaining -= source.PushedPerTick; //Reduce remaining resources..
                     if (source.Remaining <= 0) //If we're out entirely..
@@ -378,7 +379,7 @@ namespace UdderlyEvelyn.SimplePipes
                         source.Remaining = 0; //Make sure it's not <0.
                     }
                 }
-                if (hasTicksPerPush)
+                if (hasTicksPerPush && source.PushedPerTick > 0)
                     source.LastTickPushed = tick; //We have pushed, so record that.
             }
             foreach (var source in CompoundSources)
@@ -388,12 +389,11 @@ namespace UdderlyEvelyn.SimplePipes
                     var limitedAmount = source.LimitedAmount[i];
                     var yield = source.PushedPerTick[i];
                     if (limitedAmount && source.Empty[i]) //It's limited and out of stuff..
-                        continue; //Skip!
+                        yield = 0; //Skip!
                     bool hasTicksPerPush = false;
                     if ((hasTicksPerPush = source.TicksPerPush[i] > 0) && tick - source.LastTickPushed[i] < source.TicksPerPush[i])//If it has a TicksPerPush and it's not time to push..
-                        continue; //Skip, not yet time!
-                    source.Circuit.Contents[i] += yield; //Contribute resources..
-                    if (limitedAmount) //If it's limited..
+                        yield = 0; //Skip, not yet time!
+                    if (source.Circuit.Push(source.Resources[i], yield) && limitedAmount) //If it's limited..
                     {
                         source.Remaining[i] -= yield; //Reduce remaining resources..
                         if (source.Remaining[i] <= 0) //If we're out entirely..
@@ -402,7 +402,7 @@ namespace UdderlyEvelyn.SimplePipes
                             source.Remaining[i] = 0; //Make sure it's not <0.
                         }
                     }
-                    if (hasTicksPerPush)
+                    if (hasTicksPerPush && yield > 0)
                         source.LastTickPushed[i] = tick;
                 }
             }

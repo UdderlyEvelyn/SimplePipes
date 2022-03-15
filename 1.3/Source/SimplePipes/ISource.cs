@@ -10,9 +10,9 @@ namespace UdderlyEvelyn.SimplePipes
     {
         public float PushedPerTick { get; set; }
 
-        public float LastTickPushed { get; set; }
+        public int LastTickPushed { get; set; }
 
-        public float TicksPerPush { get; set; }
+        public int TicksPerPush { get; set; }
 
         public float OriginalResourceTotal { get; set; }
 

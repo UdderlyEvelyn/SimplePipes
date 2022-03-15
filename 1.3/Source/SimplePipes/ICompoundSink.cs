@@ -10,9 +10,9 @@ namespace UdderlyEvelyn.SimplePipes
     {
         public float[] PulledPerTick { get; set; }
 
-        public float[] LastTickPulled { get; set; }
+        public int[] LastTickPulled { get; set; }
 
-        public float[] TicksPerPull { get; set; }
+        public int[] TicksPerPull { get; set; }
 
         public bool[] Supplied { get; set; }
     }

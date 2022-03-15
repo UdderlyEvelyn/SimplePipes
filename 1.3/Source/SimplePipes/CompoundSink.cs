@@ -11,8 +11,8 @@ namespace UdderlyEvelyn.SimplePipes
     public class CompoundSink : CompoundResourceUser, ICompoundSink
     {
         protected float[] _pulledPerTick;
-        protected float[] _lastTickPulled;
-        protected float[] _ticksPerPull;
+        protected int[] _lastTickPulled;
+        protected int[] _ticksPerPull;
         protected bool[] _supplied;
 
         public float[] PulledPerTick
@@ -21,13 +21,13 @@ namespace UdderlyEvelyn.SimplePipes
             set => _pulledPerTick = value;
         }
 
-        public float[] LastTickPulled
+        public int[] LastTickPulled
         {
             get => _lastTickPulled;
             set => _lastTickPulled = value;
         }
 
-        public float[] TicksPerPull
+        public int[] TicksPerPull
         {
             get => _ticksPerPull;
             set => _ticksPerPull = value;

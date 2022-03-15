@@ -11,8 +11,8 @@ namespace UdderlyEvelyn.SimplePipes
     public class CompoundSource : CompoundResourceUser, ICompoundSource
     {
         protected float[] _pushedPerTick;
-        protected float[] _ticksPerPush;
-        protected float[] _lastTickPushed;
+        protected int[] _ticksPerPush;
+        protected int[] _lastTickPushed;
         protected float[] _originalResourceTotal;
         protected float[] _remaining;
         protected bool[] _limitedAmount;
@@ -24,13 +24,13 @@ namespace UdderlyEvelyn.SimplePipes
             set => _pushedPerTick = value;
         }
 
-        public float[] TicksPerPush
+        public int[] TicksPerPush
         {
             get => _ticksPerPush;
             set => _ticksPerPush = value;
         }
 
-        public float[] LastTickPushed
+        public int[] LastTickPushed
         {
             get => _lastTickPushed;
             set => _lastTickPushed = value;
