@@ -10,6 +10,8 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public interface IPipe
     {
+        public Type CircuitType { get; set; }
+
         public Resource Resource { get; set; }
 
         public float Capacity { get; set; }

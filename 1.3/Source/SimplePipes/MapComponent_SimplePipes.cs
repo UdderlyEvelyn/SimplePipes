@@ -38,8 +38,9 @@ namespace UdderlyEvelyn.SimplePipes
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
                         pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
-                    else if (pipe.Circuit != otherPipe.Circuit) //We have a circuit already, we're mixing 'em together into one big circuit now!
+                    else if (pipe.CircuitType == otherPipe.CircuitType && pipe.Circuit != otherPipe.Circuit)
                     {
+                        Log.Message("[Simple Pipes] Marging networks.");
                         pipe.Circuit.Merge(otherPipe.Circuit);
                         if (Circuits.Contains(otherPipe.Circuit))
                             Circuits.Remove(otherPipe.Circuit);
@@ -50,8 +51,13 @@ namespace UdderlyEvelyn.SimplePipes
             }
             if (pipe.Circuit == null) //If we didn't find a circuit after all that..
             {
-                pipe.Circuit = new Circuit(new[] { pipe }) { Capacity = pipe.Capacity, Resource = pipe.Resource }; //New circuit.
+                Log.Message("[Simple Pipes] Creating new network for pipe that could not locate one.");
+                pipe.Circuit = (Circuit)Activator.CreateInstance(pipe.CircuitType);
+                pipe.Circuit.Pipes.Add(pipe);
+                pipe.Circuit.Capacity = pipe.Capacity;
+                pipe.Circuit.Resource = pipe.Resource;
                 Circuits.Add(pipe.Circuit); //Register circuit.
+                pipe.Circuit.Initialize();
             }
             else
                 addCapacityToCircuit(pipe);
@@ -150,8 +156,15 @@ namespace UdderlyEvelyn.SimplePipes
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
                         pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
-                    else if (pipe.Circuit != otherPipe.Circuit) //We have a circuit already, we're mixing 'em together into one big circuit now!
+                    else if (pipe.CircuitType == otherPipe.CircuitType && pipe.Circuit != otherPipe.Circuit)
                     {
+                        float pipeCircuitTotalCapacity = 0;
+                        float otherPipeCircuitTotalCapacity = 0;
+                        for (int j = 0; j < pipe.Circuit.Resources.Length; j++)
+                        {
+                            pipeCircuitTotalCapacity += pipe.Circuit.Capacities[j];
+                            otherPipeCircuitTotalCapacity += otherPipe.Circuit.Capacities[j];
+                        }
                         pipe.Circuit.Merge(otherPipe.Circuit);
                         if (CompoundCircuits.Contains(otherPipe.Circuit))
                             CompoundCircuits.Remove(otherPipe.Circuit);
@@ -162,8 +175,14 @@ namespace UdderlyEvelyn.SimplePipes
             }
             if (pipe.Circuit == null) //If we didn't find a circuit after all that..
             {
-                pipe.Circuit = new CompoundCircuit(new[] { pipe }) { Capacities = pipe.Capacities, Resources = pipe.Resources, Contents = new float[pipe.Resources.Length] }; //New circuit.
+                Log.Message("[Simple Pipes] Creating new network for pipe that could not locate one.");
+                pipe.Circuit = (CompoundCircuit)Activator.CreateInstance(pipe.CircuitType);
+                pipe.Circuit.Pipes.Add(pipe);
+                pipe.Circuit.Capacities = pipe.Capacities;
+                pipe.Circuit.Resources = pipe.Resources;
+                pipe.Circuit.Contents = new float[pipe.Resources.Length];
                 CompoundCircuits.Add(pipe.Circuit); //Register circuit.
+                pipe.Circuit.Initialize();
             }
             else
                 addCapacityToCompoundCircuit(pipe);

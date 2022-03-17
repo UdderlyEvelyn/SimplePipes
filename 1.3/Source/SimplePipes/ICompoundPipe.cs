@@ -9,6 +9,8 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public interface ICompoundPipe
     {
+        public Type CircuitType { get; set; }
+
         public Resource[] Resources { get; set; }
 
         public float[] Capacities { get; set; }

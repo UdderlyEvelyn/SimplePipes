@@ -10,11 +10,18 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class CompoundPipe : Building, ICompoundPipe
     {
+        protected Type _circuitType = typeof(CompoundCircuit);
         protected Resource[] _resources;
         protected float[] _capacities;
         protected CompoundCircuit _circuit;
 
         public Thing Thing => this;
+
+        public Type CircuitType
+        {
+            get => _circuitType;
+            set => _circuitType = value;
+        }
 
         public Resource[] Resources
         {

@@ -10,19 +10,19 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class CompoundCircuit : IExposable
     {
-        public List<ICompoundPipe> Pipes;
+        public List<ICompoundPipe> Pipes = new();
         public float[] Capacities;
         public float[] Contents;
         public Resource[] Resources;
         public event Action<Resource, float> ExcessiveCapacity;
         public event Action<Resource, float> InsufficientContent;
+        public event Action<CompoundCircuit> OnAbsorb;
+        public event Action<CompoundCircuit> OnAbsorbed;
+        public bool Initialized = false;
 
-        public CompoundCircuit(IEnumerable<ICompoundPipe> pipes = null)
+        public virtual void Initialize()
         {
-            if (pipes != null)
-                pipes = new List<ICompoundPipe>(pipes);
-            else
-                pipes = new List<ICompoundPipe>();
+            Initialized = true;
         }
 
         public virtual void Merge(CompoundCircuit circuit)
@@ -30,14 +30,21 @@ namespace UdderlyEvelyn.SimplePipes
             for (int i = 0; i < Resources.Length; i++)
                 if (Resources[i].ID != circuit.Resources[i].ID)
                     return; //Mismatch, don't merge.
-            foreach (var pipe in circuit.Pipes) //Loop through those pipes..
-                pipe.Circuit = this; //Assign them to this circuit.
-            Pipes.AddRange(circuit.Pipes);
-            for (int i = 0; i < Resources.Length; i++)
+            if (circuit.Pipes != null)
             {
-                Capacities[i] += circuit.Capacities[i];
-                Contents[i] += circuit.Contents[i];
+                foreach (var pipe in circuit.Pipes) //Loop through those pipes..
+                    pipe.Circuit = this; //Assign them to this circuit.
+                Pipes.AddRange(circuit.Pipes);
+                for (int i = 0; i < Resources.Length; i++)
+                {
+                    Capacities[i] += circuit.Capacities[i];
+                    Contents[i] += circuit.Contents[i];
+                }
             }
+            if (OnAbsorb != null)
+                OnAbsorb(circuit);
+            if (circuit.OnAbsorbed != null)
+                circuit.OnAbsorbed(this);
         }
 
         /// <summary>

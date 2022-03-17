@@ -10,30 +10,37 @@ namespace UdderlyEvelyn.SimplePipes
 {
     public class Circuit : IExposable
     {
-        public List<IPipe> Pipes;
+        public List<IPipe> Pipes = new();
         public float Capacity;
         public float Content;
         public Resource Resource;
         public event Action<float> ExcessiveCapacity;
         public event Action<float> InsufficientContent;
+        public event Action<Circuit> OnAbsorbed;
+        public event Action<Circuit> OnAbsorb;
+        public bool Initialized = false;
 
-        public Circuit(IEnumerable<IPipe> pipes = null)
+        public virtual void Initialize()
         {
-            if (pipes != null)
-                Pipes = new List<IPipe>(pipes);
-            else
-                Pipes = new List<IPipe>();
+            Initialized = true;
         }
 
         public virtual void Merge(Circuit circuit)
         {
             if (Resource != circuit.Resource)
                 return; //Don't.
-            foreach (var pipe in circuit.Pipes) //Loop through those pipes..
-                pipe.Circuit = this; //Assign them to this circuit.
-            Pipes.AddRange(circuit.Pipes);
-            Capacity += circuit.Capacity;
-            Content += circuit.Content;
+            if (circuit.Pipes == null)
+            {
+                foreach (var pipe in circuit.Pipes) //Loop through those pipes..
+                    pipe.Circuit = this; //Assign them to this circuit.
+                Pipes.AddRange(circuit.Pipes);
+                Capacity += circuit.Capacity;
+                Content += circuit.Content;
+            }
+            if (OnAbsorb != null)
+                OnAbsorb(circuit);
+            if (circuit.OnAbsorbed != null)
+                circuit.OnAbsorbed(this);
         }
 
         /// <summary>
