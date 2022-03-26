@@ -37,10 +37,13 @@ namespace UdderlyEvelyn.SimplePipes
                 {
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
+                    {
                         pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
+                        otherPipe.Circuit.Pipes.Add(pipe); //Assign it to that circuit's pipe list.
+                    }
                     else if (pipe.CircuitType == otherPipe.CircuitType && pipe.Circuit != otherPipe.Circuit)
                     {
-                        Log.Message("[Simple Pipes] Marging networks.");
+                        Log.Message("[Simple Pipes] Merging networks.");
                         pipe.Circuit.Merge(otherPipe.Circuit);
                         if (Circuits.Contains(otherPipe.Circuit))
                             Circuits.Remove(otherPipe.Circuit);
@@ -146,6 +149,7 @@ namespace UdderlyEvelyn.SimplePipes
 
         public void RegisterPipe(ICompoundPipe pipe)
         {
+            Log.Message("[Simple Pipes] Registering pipe " + pipe.ToString() + ".");
             List<ICompoundPipe> foundPipes = new List<ICompoundPipe>();
             List<Thing> things = new List<Thing>();
             GenAdjFast.AdjacentThings8Way(pipe.Thing, things);
@@ -155,7 +159,10 @@ namespace UdderlyEvelyn.SimplePipes
                 {
                     foundPipes.Add(otherPipe); //Store this for later!
                     if (pipe.Circuit == null) //If we don't have a circuit yet..
+                    {
                         pipe.Circuit = otherPipe.Circuit; //Assign it to that circuit.
+                        otherPipe.Circuit.Pipes.Add(pipe); //Add it to the list of pipes for that circuit.
+                    }
                     else if (pipe.CircuitType == otherPipe.CircuitType && pipe.Circuit != otherPipe.Circuit)
                     {
                         float pipeCircuitTotalCapacity = 0;
