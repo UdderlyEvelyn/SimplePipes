@@ -478,12 +478,14 @@ namespace UdderlyEvelyn.SimplePipes
 
         public override void ExposeData()
         {
-            Scribe_Collections.Look(ref Circuits, "Circuits", LookMode.Reference);
+            Scribe_Collections.Look(ref Circuits, "Circuits", LookMode.Deep);
             Scribe_Collections.Look(ref Sources, "Sources", LookMode.Reference);
             Scribe_Collections.Look(ref Sinks, "Sinks", LookMode.Reference);
-            Scribe_Collections.Look(ref CompoundCircuits, "CompoundCircuits", LookMode.Reference);
+            Scribe_Collections.Look(ref Hubs, "Hubs", LookMode.Reference);
+            Scribe_Collections.Look(ref CompoundCircuits, "CompoundCircuits", LookMode.Deep);
             Scribe_Collections.Look(ref CompoundSources, "CompoundSources", LookMode.Reference);
             Scribe_Collections.Look(ref CompoundSinks, "CompoundSinks", LookMode.Reference);
+            Scribe_Collections.Look(ref CompoundHubs, "CompoundHubs", LookMode.Reference);
         }
     }
 }
